@@ -1,0 +1,445 @@
+---
+title: "TP1-Logiciel statistique R"
+author: "Traoré Sié Rachid"
+date: "2024-04-02"
+output: 
+  pdf_document: 
+    toc: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, include=FALSE}
+#getwd()
+#------------------------------------
+#setwd(""C:/Users/hp/Desktop/TP1 Logiciel Statistique R"")
+#------------------------------------
+#getwd()
+```
+
+```{r message=FALSE}
+#------------------------------------
+library(readxl) # pour importer la base Base_Projet.xlsx
+#------------------------------------
+library(dplyr) # pour manipuler la base Base_Projet.xlsx
+#------------------------------------
+library(janitor) # pour réaliser les tableaux de contingence avec la fonction tabyl
+```
+
+# IMPORTATION ET MISE EN FORME
+
+## Importons la base de données dans un objet de type data.frame nommé projet
+
+```{r}
+#------------------------------------
+projet <- read_excel("Base_Projet.xlsx", 
+    sheet = "Feuil1") # importation de la base de la feuille Feuil1
+#------------------------------------
+View(projet) # visualier la base
+```
+
+## Donnons le nombre de lignes (i.e. le nombre de PME) et colonnes (i.e. nombre de variables) de la base projet
+
+-   le nombre de lignes (i.e. le nombre de PME) de la base projet
+
+```{r}
+#------------------------------------
+nrow(projet) 
+#------------------------------------
+# nrow permet de renvoyer le nombre de lignes de la base de données
+
+```
+
+-   le nombre de colonnes (i.e. nombre de variables) de la base projet
+
+```{r}
+#------------------------------------
+ncol(projet)
+#------------------------------------
+# ncol permet de renvoyer le nombre de colonnes de la base de données
+```
+
+## Vérifions s’il y a des valeurs manquantes pour la variable key dans la base projet. Si oui, identifier la (ou les) PME concernée(s).
+
+```{r}
+# Vérification des valeurs manquantes dans la variable key
+
+valeurs_manquantes <- is.na(projet$key)
+
+# Affichage des indices des valeurs manquantes
+
+indices_manquants <- which(valeurs_manquantes)
+print(indices_manquants)
+
+```
+
+Il n'y a pas donc pas de valeurs manquantes pour la variable key dans la base projet.
+
+# CREATION DES VARIABLES
+
+## Rénommons la variable q1 en region
+
+```{r}
+#------------------------------------
+projet <- projet %>% 
+  rename(region=q1) 
+#------------------------------------
+#rename() permet de renommer les colonnes de nos bases de données
+#------------------------------------
+#rename(nouvelle_variable=ancienne_variable)
+#------------------------------------
+#nouvelle_variable est region
+#------------------------------------
+#ancienne_variable est q1
+#------------------------------------
+```
+
+## Rénommons la variable q2 en departement
+
+```{r}
+#------------------------------------
+projet <- projet %>% 
+  rename(departement=q2)
+#------------------------------------
+#rename() permet de renommer les colonnes de nos bases de données
+#------------------------------------
+#rename(nouvelle_variable=ancienne_variable)
+#------------------------------------
+#nouvelle_variable est departement
+#------------------------------------
+#ancienne_variable est q2
+```
+
+## Rénommons la variable q23 en sexe
+
+```{r}
+#------------------------------------
+projet <- projet %>% 
+  rename(sexe=q23)
+#------------------------------------
+#rename() permet de renommer les colonnes de nos bases de données
+#------------------------------------
+#rename(nouvelle_variable=ancienne_variable)
+#------------------------------------
+#nouvelle_variable est sexe
+#------------------------------------
+#ancienne_variable est q23
+#------------------------------------
+```
+
+## Créons la variable sexe_2 qui vaut 1 si sexe égale à Femme et 0 sinon.
+
+```{r}
+#------------------------------------
+projet <- projet %>% 
+  mutate(sexe_2=ifelse(sexe=="Femme",1,0))
+#------------------------------------
+# mutate crée une autre variable sexe_2 
+# où l'on code la modalité Femme en 1 et en 0 sinon.
+```
+
+## Créons un data.frame nommé langues qui prend les variables key et les variables correspondantes décrites plus haut.
+
+```{r}
+#------------------------------------
+langues <- projet %>% 
+  select(key,starts_with("q24a_"))
+#------------------------------------
+View(langues) 
+#------------------------------------
+# select permet ici de selectionner la variable key 
+#et toutes varibles commençant par q24a_ avec startswith
+```
+
+## Créons une variable parle qui est égale au nombre de langue parlée par le dirigeant de la PME.
+
+```{r}
+#------------------------------------
+langues$parle <- langues[,2:10] %>% 
+  apply(MARGIN = 1,FUN = sum)
+#------------------------------------
+# Il s'agit de créer une variable parle
+# les variables concernant les langues sontà la position de 2 à 10
+# apply permet de sommer avec FUN=sum suivant la ligne grâce à MARGIN=1 
+
+```
+
+## Sélectionnez uniquement les variables key et parle, l’objet de retour sera langues
+
+```{r}
+#------------------------------------
+langues <- langues %>% 
+  select(key,parle)
+#------------------------------------
+# select permet ici de selectionner la variable key et la vraiable parle
+```
+
+## Merger les data.frame projet et langues
+
+```{r}
+#------------------------------------
+merged_projet <- full_join(projet,langues,by="key")
+#------------------------------------
+View(merged_projet)
+#------------------------------------
+# full_join permet d'effectuer la jointure des deux 
+# data_frames projet et langues selon la variable key.
+```
+
+# ANALYSE DESCRIPTIVE
+
+## la répartition des PME suivant:
+
+-   **Selon le sexe**
+
+```{r}
+#------------------------------------
+merged_projet %>%
+  tabyl(sexe) %>% 
+  adorn_pct_formatting(digits = 2)
+#------------------------------------
+# tabyl permet de fournir la répartition des PME selon le sexe des responsables .
+```
+
+Parmi les représentants de chaque PME, on a 191 femmes et 59 hommes.
+
+-   **Selon le niveau d'instruction**
+
+```{r}
+#------------------------------------
+merged_projet %>%
+  tabyl(q25) %>% 
+  adorn_pct_formatting(digits = 2)
+#------------------------------------
+# tabyl permet de fournir la répartition des PME 
+# selon le niveau d'instruction des responsables representé par la variable q25.
+```
+
+Parmi les représentations des PME, 79 n'ont aucun niveau, 56 ont un niveau primaire, 74 ont un niveau secondaire et 41 ont un niveau supérieur.
+
+-   **Selon le statut juridique**
+
+```{r}
+#------------------------------------
+merged_projet %>% 
+  tabyl(q12) %>% 
+  adorn_pct_formatting(digits = 2)
+#------------------------------------
+# tabyl permet de fournir la répartition des PME
+# selon le statut juridique representé par q12.
+```
+
+Parmi les représentations des PME, 6 sont des associations, 179 sont des GIE , 38 sont informels , 7 sont des SA , 13 sont des SARL et 7 sont SUARL.
+
+-   **Selon le propriétaire/locataire**
+
+```{r}
+#------------------------------------
+merged_projet %>% 
+  tabyl(q81) %>% 
+  adorn_pct_formatting(digits = 2)
+#------------------------------------
+# tabyl permet de fournir la répartition des PME 
+# selon propriétaire/locataire representé par q81.
+```
+
+Parmi les representants des PME, 24 sont locataires 226 sont propiétaires
+
+-   **Selon le statut juridique et le sexe**
+
+```{r}
+#------------------------------------
+merged_projet %>% 
+  tabyl(q12,sexe)
+#------------------------------------
+# tabyl permet de fournir la répartition des PME selon le statut juridique et le sexe 
+# des responsables representé par la  q12 et sexe.
+```
+
+-   **Selon le niveau d’instruction et le sexe**
+
+```{r}
+#------------------------------------
+merged_projet %>%
+  tabyl(q25,sexe)
+#------------------------------------
+# tabyl permet de fournir la répartition des PME selon le niveau d'intruction et le sexe
+# des responsables representé par q25 et sexe.
+```
+
+-   **Selon Propriétaire/locataire suivant le sexe**
+
+```{r}
+#------------------------------------
+merged_projet %>%
+  tabyl(q81,sexe)
+#------------------------------------
+# tabyl permet de fournir la répartition des PME selon le Propriétaire/locataire et le sexe 
+# des responsables representé par q81 et sexe.
+```
+
+## Faisons les statistiques descriptives de notre choix sur les autres variables
+
+-   **Analyse de la filière arachide**
+
+Le nombre de PME dans la filière arachide est:
+
+```{r}
+#------------------------------------
+merged_projet %>%
+  select(filiere_1) %>% 
+  apply(MARGIN = 2,FUN=sum)
+#------------------------------------
+#select selectionne la variable filiere_2 representant la filiere anacarde
+#------------------------------------
+# apply permet de sommer avec FUN=sum les valeurs de la colonne filiere_1 grâce à MARGIN=1 .
+```
+
+-   **Analyse de la filière anacarde**
+
+**Le nombre de PME dans la filière anacarde est:**
+
+```{r}
+#------------------------------------
+merged_projet %>%
+  select(filiere_2) %>% 
+  apply(MARGIN = 2,FUN=sum)
+#------------------------------------
+#select selectionne la variable filiere_2 representant la filiere anacarde
+#------------------------------------
+# apply permet de sommer avec FUN=sum les valeurs de la colonne filiere_2 grâce à MARGIN=1 .
+```
+
+-   **Analyse de la filière mangue**
+
+**Le nombre de PME dans la filière mangue est:**
+
+```{r}
+#------------------------------------
+merged_projet %>%
+  select(filiere_3) %>% 
+  apply(MARGIN = 2,FUN=sum)
+#------------------------------------
+# apply permet de sommer avec FUN=sum les valeurs de la colonne filiere_3 grâce à MARGIN=1 .
+```
+
+-   **Analyse de la filière riz**
+
+**Le nombre de PME dans la filière riz est:**
+
+```{r}
+#------------------------------------
+merged_projet %>%
+  select(filiere_4) %>% 
+  apply(MARGIN = 2,FUN=sum)
+#------------------------------------
+# apply permet de sommer avec FUN=sum les valeurs de la colonne filiere_4 grâce à MARGIN=1 .
+```
+
+-   **Analyse des activités principales des entréprises**
+
+```{r}
+#------------------------------------
+merged_projet %>% 
+  tabyl(q8) %>% 
+  adorn_pct_formatting(digits = 2) # répartition des entréprises selon les activités principales 
+```
+
+```{r}
+barplot(table(merged_projet$q8),
+        main = "Repartition des activités principales des entréprises", # le titre du graphique
+        xlab = "Catégories", ylab = "Fréquence", # Les titres des axes
+        col = rainbow(5)) # pour la couleur
+```
+
+-   **Analyse des dates de soumission**
+
+```{r}
+
+hist(merged_projet$submissiondate, # la variable
+     breaks = "day",  # Le mode de répartition
+     main = "Distribution temporelle des données", # le titre du graphique
+     col=rainbow(250)) # pour la couleur
+
+# Histogramme des dates
+
+
+```
+
+L'analyse de la distribution temporelle des dates de soumission des informations montre que les soumissions ont été effectuées du 17 mai au 20 mai puis du 04 juin au 22 juin. Entre le 20 mai et le 04 juin ,il n'a pas eu de soumissions.
+
+-   \*\*Analyse des dates d'enquête
+
+```{r}
+
+hist(merged_projet$today,
+     breaks = "day",
+     main = "Distribution temporelle des données",
+     col=rainbow(250)) 
+
+# Histogramme des dates
+
+```
+
+Concernant les dates d'enquêtes, les jours correspondant sont du 06 mai au 10 mai puis du 22 mai au 30 mai ,du 04 juin au 16 juin et 18 juin au 21 juin
+
+-   Les statistiques descriptives univariées
+
+```{r}
+# Fonction pour les statistiques descriptives univariées avec graphiques
+univarie <- function(data,variable,plot = TRUE) {
+  
+  statistics <- data %>% 
+    tabyl(variable) # pour la repartition de la variable
+  
+  nb <- length(unique(data[[variable]]))
+  
+  if (plot) {
+    barplot(table(data[[variable]]),
+            main = "Histogramme des données", 
+            xlab = "Valeurs", col = rainbow(nb))
+
+  }
+
+  return(statistics)
+}
+```
+
+```{r warning=FALSE}
+sexe <- merged_projet$sexe
+
+univarie(merged_projet,"sexe",plot=T)
+```
+
+```{r}
+# Fonction pour les statistiques descriptives bivariées avec graphiques
+
+bivarie <- function(data,variable1,variable2, plot = TRUE) {
+  
+  # tableau de contingence
+  
+  tableau_croise <- table(data[[variable1]],data[[variable2]])
+  
+  if (plot) {
+    
+    # Graphique en barres empilées
+    
+    barplot(tableau_croise, 
+            main = "Distribution",
+            xlab = variable2, ylab = "Fréquence", 
+            col = c("blue", "red"))
+    legend("topright", legend = rownames(tableau_croise), fill = c("blue", "red"))
+
+  }
+
+  return(tableau_croise)
+}
+```
+
+```{r}
+
+bivarie(merged_projet,"sexe","q25")
+```
