@@ -35,7 +35,7 @@ library(janitor) # pour réaliser les tableaux de contingence avec la fonction t
 
 ```{r}
 #------------------------------------
-projet <- read_excel("Base_Projet.xlsx", 
+projet <- read_excel("../data/Base_Projet.xlsx", 
     sheet = "Feuil1") # importation de la base de la feuille Feuil1
 #------------------------------------
 View(projet) # visualier la base
